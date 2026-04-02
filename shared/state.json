@@ -1,0 +1,33 @@
+{
+  "system": {
+    "status": "idle",
+    "active_scheduler": "priority",
+    "uptime_seconds": 0,
+    "total_tasks_completed": 0
+  },
+
+  "workers": [
+    { "id": "W1", "status": "idle", "current_task": null, "tasks_completed": 0 },
+    { "id": "W2", "status": "idle", "current_task": null, "tasks_completed": 0 },
+    { "id": "W3", "status": "idle", "current_task": null, "tasks_completed": 0 },
+    { "id": "W4", "status": "idle", "current_task": null, "tasks_completed": 0 }
+  ],
+
+  "task_queue": [],
+
+  "resources": [
+    { "id": "R1", "name": "CPU Core",       "total": 3, "available": 3, "held_by": [] },
+    { "id": "R2", "name": "Memory Block",   "total": 2, "available": 2, "held_by": [] },
+    { "id": "R3", "name": "I/O Channel",    "total": 4, "available": 4, "held_by": [] },
+    { "id": "R4", "name": "Network Socket", "total": 2, "available": 2, "held_by": [] }
+  ],
+
+  "deadlock": {
+    "status": "none",
+    "detected_at": null,
+    "involved_tasks": [],
+    "action_taken": null
+  },
+
+  "event_log": []
+}
