@@ -1,4 +1,10 @@
 {
-  "pending_tasks": [],
+  "pending_tasks": [
+    {
+      "priority": 8,
+      "duration": 5,
+      "resources_needed": ["R1", "R2"]
+    }
+  ],
   "reset_flag": false
 }
