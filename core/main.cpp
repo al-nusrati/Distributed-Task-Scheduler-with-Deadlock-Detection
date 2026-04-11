@@ -6,6 +6,7 @@
 #include <string>
 #include <mutex>
 #include <deque>
+#include <map>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
@@ -24,32 +25,33 @@ using json = nlohmann::json;
 
 const string STATE_FILE  = "../../shared/state.json";
 const string INPUT_FILE  = "../../shared/input.json";
+const string MODE_FILE   = "../../shared/scheduler_mode.txt";
 const string UPLOADS_DIR = "../../shared/uploads/";
 
 deque<json> eventLog;
 mutex       eventLogMtx;
 int         taskCounter = 0;
+mutex       taskCounterMtx;
+
+map<string, string> taskOutputMap;
+mutex               taskOutputMtx;
 
 DeadlockState currentDeadlockState = { "none", "", {}, "" };
 mutex         deadlockMtx;
+
 vector<string> assignResources(const string& language) {
-    if (language == "cpp" || language == "c")
-        return { "R1", "R2" };
-    else if (language == "python")
-        return { "R2", "R3" };
-    else if (language == "java")
-        return { "R1", "R2", "R3" };
-    else if (language == "js")
-        return { "R3", "R4" };
+    if (language == "cpp" || language == "c")  return { "R1", "R2" };
+    else if (language == "python")             return { "R2", "R3" };
+    else if (language == "java")               return { "R1", "R2", "R3" };
+    else if (language == "js")                 return { "R3", "R4" };
     return { "R1" };
 }
 
 int assignPriority(const string& filepath) {
     ifstream f(filepath, ios::binary | ios::ate);
     if (!f.is_open()) return 5;
-    long size = f.tellg();
+    long size = (long)f.tellg();
     f.close();
-
     if (size < 1024)       return 9;
     else if (size < 5120)  return 7;
     else if (size < 20480) return 5;
@@ -93,6 +95,9 @@ void logEvent(const string& message) {
 void readInputFile(Scheduler& scheduler) {
     const vector<string> ALLOWED = { "cpp", "c", "python", "java", "js" };
 
+    // Ensure uploads dir exists
+    system(("mkdir -p " + UPLOADS_DIR).c_str());
+
     while (true) {
         this_thread::sleep_for(chrono::seconds(1));
 
@@ -116,14 +121,19 @@ void readInputFile(Scheduler& scheduler) {
                 continue;
             }
 
-            taskCounter++;
-            string taskId  = "T" + to_string(taskCounter);
+            int id;
+            {
+                lock_guard<mutex> lk(taskCounterMtx);
+                id = ++taskCounter;
+            }
+            string taskId  = "T" + to_string(id);
             string content = t.value("file_content", "");
 
             string fpath = UPLOADS_DIR + taskId + "_" + fname;
-            ofstream fout(fpath);
-            fout << content;
-            fout.close();
+            {
+                ofstream fout(fpath);
+                fout << content;
+            }
 
             int priority             = assignPriority(fpath);
             vector<string> resources = assignResources(lang);
@@ -137,9 +147,9 @@ void readInputFile(Scheduler& scheduler) {
         data["pending_tasks"] = json::array();
         ofstream out(INPUT_FILE);
         out << data.dump(2);
-        out.close();
     }
 }
+
 void writeStateFile(
     Scheduler&       scheduler,
     ResourceManager& resourceManager,
@@ -167,13 +177,17 @@ void writeStateFile(
             json worker;
             worker["id"]              = ws.id;
             worker["status"]          = ws.status;
-            worker["current_task"]    = ws.current_task.empty() ? json(nullptr) : json(ws.current_task);
-            worker["current_file"]    = ws.current_file.empty() ? json(nullptr) : json(ws.current_file);
-            worker["current_user"]    = ws.current_user.empty() ? json(nullptr) : json(ws.current_user);
+            worker["current_task"]    = ws.current_task.empty()  ? json(nullptr) : json(ws.current_task);
+            worker["current_file"]    = ws.current_file.empty()  ? json(nullptr) : json(ws.current_file);
+            worker["current_user"]    = ws.current_user.empty()  ? json(nullptr) : json(ws.current_user);
             worker["tasks_completed"] = ws.tasks_completed;
+            // Store last output so dashboard can surface it
+            worker["last_output"]     = ws.last_output.empty()   ? json(nullptr) : json(ws.last_output);
+            worker["last_task_id"]    = ws.last_task_id.empty()  ? json(nullptr) : json(ws.last_task_id);
             state["workers"].push_back(worker);
         }
 
+        // Task queue snapshot
         state["task_queue"] = json::array();
         for (const Task& t : scheduler.getQueue()) {
             json task;
@@ -186,6 +200,7 @@ void writeStateFile(
             state["task_queue"].push_back(task);
         }
 
+        // Resources
         state["resources"] = json::array();
         for (const Resource& r : resourceManager.getAllResources()) {
             json res;
@@ -197,6 +212,7 @@ void writeStateFile(
             state["resources"].push_back(res);
         }
 
+        // Deadlock
         {
             lock_guard<mutex> lock(deadlockMtx);
             state["deadlock"]["status"]         = currentDeadlockState.status;
@@ -214,14 +230,33 @@ void writeStateFile(
                 state["event_log"].push_back(entry);
         }
 
+        {
+            lock_guard<mutex> lk(taskOutputMtx);
+            state["task_outputs"] = json::object();
+            for (const auto& [tid, out] : taskOutputMap)
+                state["task_outputs"][tid] = out;
+        }
+
         ofstream out(STATE_FILE);
         out << state.dump(2);
-        out.close();
+    }
+}
+
+void collectOutputs(vector<Worker*>& workers) {
+    while (true) {
+        this_thread::sleep_for(chrono::milliseconds(500));
+        for (Worker* w : workers) {
+            WorkerState ws = w->getState();
+            if (!ws.last_task_id.empty() && !ws.last_output.empty()) {
+                lock_guard<mutex> lk(taskOutputMtx);
+                taskOutputMap[ws.last_task_id] = ws.last_output;
+            }
+        }
     }
 }
 
 int main() {
-    cout << "CoreSync — Starting..." << endl;
+    cout << "ParagonEngine — Starting..." << endl;
 
     Scheduler       scheduler;
     ResourceManager resourceManager;
@@ -233,8 +268,10 @@ int main() {
     }
 
     DeadlockDetector detector(resourceManager, [](DeadlockState state) {
-        lock_guard<mutex> lock(deadlockMtx);
-        currentDeadlockState = state;
+        {
+            lock_guard<mutex> lock(deadlockMtx);
+            currentDeadlockState = state;
+        }
         logEvent("Deadlock " + state.status + ": " + (state.action_taken.empty() ? "detected" : state.action_taken));
     });
 
@@ -242,11 +279,14 @@ int main() {
     detector.start();
 
     int uptimeSeconds = 0;
+
     thread(readInputFile, ref(scheduler)).detach();
-    thread(writeStateFile, ref(scheduler), ref(resourceManager),ref(workers), ref(uptimeSeconds)).detach();
+    thread(writeStateFile, ref(scheduler), ref(resourceManager), ref(workers), ref(uptimeSeconds)).detach();
+    thread(collectOutputs, ref(workers)).detach();
 
     cout << "All systems running. Waiting for file submissions..." << endl;
     while (true) this_thread::sleep_for(chrono::seconds(10));
+
     for (Worker* w : workers) { w->stop(); delete w; }
     detector.stop();
     return 0;

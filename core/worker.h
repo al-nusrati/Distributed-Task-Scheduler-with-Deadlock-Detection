@@ -12,10 +12,12 @@ enum class WorkerStatus { IDLE, BUSY };
 struct WorkerState {
     string id;
     string status;
-    string current_task;      // task ID
+    string current_task;      // task ID currently running
     string current_file;      // filename being executed
     string current_user;      // submitted_by
     int    tasks_completed;
+    string last_output;       // captured stdout/stderr of last task
+    string last_task_id;      // task ID of last completed/failed task
 };
 
 class Worker {
@@ -36,10 +38,12 @@ private:
     string           currentUser;
     int              tasksCompleted;
     bool             running;
+    string           lastOutput;     // output of last executed task
+    string           lastTaskId;     // id of last executed task
     mutable mutex    mtx;
     function<void(string)> logEvent;
 
     void run();
-
     string executeFile(Task& task);
+    string summarizeOutput(const string& output);
 };

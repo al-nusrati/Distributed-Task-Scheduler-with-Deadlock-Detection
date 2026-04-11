@@ -1,4 +1,12 @@
 {
-  "pending_tasks": [],
+  "pending_tasks": [
+    {
+      "id": "TASK_101",
+      "filename": "hello.cpp",
+      "filepath": "../../shared/uploads/hello.cpp",
+      "language": "cpp",
+      "submitted_by": "TestUser"
+    }
+  ],
   "reset_flag": false
 }
