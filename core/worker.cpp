@@ -4,8 +4,10 @@
 #include <cstdio>
 #include <array>
 using namespace std;
-#define popen  _popen
-#define pclose _pclose
+#ifdef _WIN32
+    #define popen  _popen
+    #define pclose _pclose
+#endif
 
 Worker::Worker(string id, Scheduler& scheduler, ResourceManager& resourceManager, function<void(string)> onEventLog)
     : id(id), scheduler(scheduler), resourceManager(resourceManager), status(WorkerStatus::IDLE), currentTaskId(""), currentFile(""),currentUser(""), tasksCompleted(0), running(false), logEvent(onEventLog)
