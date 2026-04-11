@@ -17,7 +17,7 @@ void Worker::start() {
     running = true;
     int workerNum = 0;
     if (!id.empty() && isdigit(id.back()))
-        workerNum = id.back() - '1'; // W1=0, W2=1, W3=2, W4=3
+        workerNum = id.back() - '1';
 
     thread([this, workerNum]() {
         this_thread::sleep_for(chrono::milliseconds(workerNum * 150));
@@ -54,18 +54,26 @@ string Worker::executeFile(Task& task) {
     }
     else if (task.language == "java") {
         string className = task.filename.substr(0, task.filename.find_last_of('.'));
-        string dir = task.filepath.substr(0, task.filepath.find_last_of('/'));
-        cmd = "cd \"" + dir + "\" && javac \"" + task.filepath + "\" 2>&1" + " && timeout 10 java -cp \"" + dir + "\" " + className + " 2>&1";
+        char sep = '/';
+        #ifdef _WIN32
+            sep = '\\';
+        #endif
+        string dir = task.filepath.substr(0, task.filepath.find_last_of(sep));
+        #ifdef _WIN32
+            cmd = "cd \"" + dir + "\" && javac \"" + task.filepath + "\" 2>&1 && java -cp \"" + dir + "\" " + className + " 2>&1";
+        #else
+            cmd = "cd \"" + dir + "\" && javac \"" + task.filepath + "\" 2>&1 && timeout 10 java -cp \"" + dir + "\" " + className + " 2>&1";
+        #endif
     }
     else if (task.language == "js") {
-        cmd = "timeout 10 node \"" + task.filepath + "\" 2>&1";
-    }
-    else {
     #ifdef _WIN32
         cmd = "node \"" + task.filepath + "\" 2>&1";
     #else
         cmd = "timeout 10 node \"" + task.filepath + "\" 2>&1";
     #endif
+    }
+    else {
+        return "Unsupported language: " + task.language;
     }
 
     string output;
@@ -99,7 +107,6 @@ void Worker::run() {
         if (!granted) {
             logEvent(id + " → Task " + task->id + " (" + task->filename + ") denied — unsafe resource state");
             task->status = TaskStat::Denied;
-            // Re-queue with short sleep so other workers get a turn first
             this_thread::sleep_for(chrono::milliseconds(200));
             scheduler.addTask(*task);
             delete task;
@@ -120,14 +127,12 @@ void Worker::run() {
 
         string output = executeFile(*task);
 
-        // Determine success: exit code 0 means success
         bool failed = (output.find("[Exited with code 0]") == string::npos);
 
-        // Store output so dashboard can display it per task
         {
             lock_guard<mutex> lock(mtx);
-            lastOutput    = output;
-            lastTaskId    = task->id;
+            lastOutput = output;
+            lastTaskId = task->id;
         }
 
         resourceManager.releaseResource(task->id);
@@ -147,14 +152,11 @@ void Worker::run() {
             logEvent(id + " completed Task " + task->id + " (" + task->filename + ")");
 
         delete task;
-
-        // Small yield after completing a task so other workers get scheduling turns
         this_thread::sleep_for(chrono::milliseconds(100));
     }
 }
 
 string Worker::summarizeOutput(const string& output) {
-    // Return first error line for log brevity
     size_t pos = output.find('\n');
     string first = (pos != string::npos) ? output.substr(0, pos) : output;
     if (first.size() > 80) first = first.substr(0, 80) + "...";
