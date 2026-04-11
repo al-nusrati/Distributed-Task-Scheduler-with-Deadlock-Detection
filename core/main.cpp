@@ -96,7 +96,11 @@ void readInputFile(Scheduler& scheduler) {
     const vector<string> ALLOWED = { "cpp", "c", "python", "java", "js" };
 
     // Ensure uploads dir exists
-    system(("mkdir -p " + UPLOADS_DIR).c_str());
+    #ifdef _WIN32
+        system(("if not exist \"" + UPLOADS_DIR + "\" mkdir \"" + UPLOADS_DIR + "\"").c_str());
+    #else
+        system(("mkdir -p " + UPLOADS_DIR).c_str());
+    #endif
 
     while (true) {
         this_thread::sleep_for(chrono::seconds(1));

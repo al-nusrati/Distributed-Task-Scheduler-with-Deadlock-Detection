@@ -32,13 +32,25 @@ string Worker::executeFile(Task& task) {
     string outbin = task.filepath + ".out";
 
     if (task.language == "cpp") {
+    #ifdef _WIN32
+        cmd = "g++ \"" + task.filepath + "\" -o \"" + outbin + "\" 2>&1 && \"" + outbin + "\" 2>&1";
+    #else
         cmd = "g++ \"" + task.filepath + "\" -o \"" + outbin + "\" 2>&1 && timeout 10 \"" + outbin + "\" 2>&1";
+    #endif
     }
     else if (task.language == "c") {
+    #ifdef _WIN32
+        cmd = "gcc \"" + task.filepath + "\" -o \"" + outbin + "\" 2>&1 && \"" + outbin + "\" 2>&1";
+    #else
         cmd = "gcc \"" + task.filepath + "\" -o \"" + outbin + "\" 2>&1 && timeout 10 \"" + outbin + "\" 2>&1";
+    #endif
     }
     else if (task.language == "python") {
+    #ifdef _WIN32
+        cmd = "python \"" + task.filepath + "\" 2>&1";
+    #else
         cmd = "timeout 10 python3 \"" + task.filepath + "\" 2>&1";
+    #endif
     }
     else if (task.language == "java") {
         string className = task.filename.substr(0, task.filename.find_last_of('.'));
@@ -49,7 +61,11 @@ string Worker::executeFile(Task& task) {
         cmd = "timeout 10 node \"" + task.filepath + "\" 2>&1";
     }
     else {
-        return "Unsupported language: " + task.language;
+    #ifdef _WIN32
+        cmd = "node \"" + task.filepath + "\" 2>&1";
+    #else
+        cmd = "timeout 10 node \"" + task.filepath + "\" 2>&1";
+    #endif
     }
 
     string output;
