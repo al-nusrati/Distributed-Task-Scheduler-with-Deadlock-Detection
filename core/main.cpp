@@ -93,7 +93,7 @@ void logEvent(const string& message) {
 }
 
 void readInputFile(Scheduler& scheduler) {
-    const vector<string> ALLOWED = { "cpp", "c", "python", "java", "js" };
+    const vector<string> ALLOWED = { "cpp", "c", "python", "js" };
 
     // Ensure uploads dir exists
     #ifdef _WIN32
@@ -121,7 +121,7 @@ void readInputFile(Scheduler& scheduler) {
             string user  = t.value("submitted_by", "Anonymous");
 
             if (find(ALLOWED.begin(), ALLOWED.end(), lang) == ALLOWED.end()) {
-                logEvent("Task rejected — unsupported file type: " + fname + " by " + user + " (allowed: cpp, c, python, java, js)");
+                logEvent("Task rejected — unsupported file type: " + fname + " by " + user + " (allowed: cpp, c, python, js)");
                 continue;
             }
 

@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstdio>
 #include <array>
+#include <random>
 using namespace std;
 #ifdef _WIN32
     #define popen  _popen
@@ -10,7 +11,8 @@ using namespace std;
 #endif
 
 Worker::Worker(string id, Scheduler& scheduler, ResourceManager& resourceManager, function<void(string)> onEventLog)
-    : id(id), scheduler(scheduler), resourceManager(resourceManager), status(WorkerStatus::IDLE), currentTaskId(""), currentFile(""), currentUser(""), tasksCompleted(0), running(false), logEvent(onEventLog)
+    : id(id), scheduler(scheduler), resourceManager(resourceManager), status(WorkerStatus::IDLE),
+      currentTaskId(""), currentFile(""), currentUser(""), tasksCompleted(0), running(false), logEvent(onEventLog)
 {}
 
 void Worker::start() {
@@ -52,19 +54,6 @@ string Worker::executeFile(Task& task) {
         cmd = "timeout 10 python3 \"" + task.filepath + "\" 2>&1";
     #endif
     }
-    else if (task.language == "java") {
-        string className = task.filename.substr(0, task.filename.find_last_of('.'));
-        char sep = '/';
-        #ifdef _WIN32
-            sep = '\\';
-        #endif
-        string dir = task.filepath.substr(0, task.filepath.find_last_of(sep));
-        #ifdef _WIN32
-            cmd = "cd \"" + dir + "\" && javac \"" + task.filepath + "\" 2>&1 && java -cp \"" + dir + "\" " + className + " 2>&1";
-        #else
-            cmd = "cd \"" + dir + "\" && javac \"" + task.filepath + "\" 2>&1 && timeout 10 java -cp \"" + dir + "\" " + className + " 2>&1";
-        #endif
-    }
     else if (task.language == "js") {
     #ifdef _WIN32
         cmd = "node \"" + task.filepath + "\" 2>&1";
@@ -79,7 +68,6 @@ string Worker::executeFile(Task& task) {
     string output;
     array<char, 256> buffer;
     FILE* pipe = popen(cmd.c_str(), "r");
-
     if (!pipe) return "Failed to start process.";
 
     while (fgets(buffer.data(), buffer.size(), pipe) != nullptr)
@@ -88,7 +76,6 @@ string Worker::executeFile(Task& task) {
     int exitCode = pclose(pipe);
     if (output.empty()) output = "(no output)";
     output += "\n[Exited with code " + to_string(exitCode) + "]";
-
     return output;
 }
 
@@ -107,10 +94,11 @@ void Worker::run() {
         if (!granted) {
             logEvent(id + " → Task " + task->id + " (" + task->filename + ") denied — unsafe resource state");
             task->status = TaskStat::Denied;
-            this_thread::sleep_for(chrono::milliseconds(200));
+            // Put task back FIRST, then block until a release event wakes us
             scheduler.addTask(*task);
             delete task;
-            this_thread::sleep_for(chrono::milliseconds(300));
+            // Wait for a resource release signal (max 3s) — no busy loop
+            resourceManager.waitForResources(3000);
             continue;
         }
 
@@ -126,7 +114,6 @@ void Worker::run() {
         logEvent(id + " picked up Task " + task->id + " (" + task->filename + ") from " + task->submitted_by);
 
         string output = executeFile(*task);
-
         bool failed = (output.find("[Exited with code 0]") == string::npos);
 
         {
@@ -135,7 +122,7 @@ void Worker::run() {
             lastTaskId = task->id;
         }
 
-        resourceManager.releaseResource(task->id);
+        resourceManager.releaseResource(task->id); // this calls cv.notify_all()
 
         {
             lock_guard<mutex> lock(mtx);
