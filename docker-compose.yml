@@ -1,0 +1,21 @@
+services:
+
+  api:
+    build: .
+    container_name: flask_api
+    volumes:
+      - ./shared:/app/shared
+      - ./jobs:/app/jobs
+    ports:
+      - "5000:5000"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_server
+    ports:
+      - "80:80"
+    volumes:
+      - ./dashboard:/usr/share/nginx/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - api

@@ -1,9 +1,8 @@
 #pragma once
-#include <vector>
-#include <mutex>
-#include <string>
-#include <map>
-#include <condition_variable>
+#include<vector>
+#include<mutex>
+#include<string>
+#include<map>
 
 using namespace std;
 
@@ -15,24 +14,23 @@ struct Resource {
     vector<string> held_by;
 };
 
-class ResourceManager {
+class ResourceManager{
 private:
+    
     vector<Resource>               resources;
-    map<string, map<string, int>>  allocation;
-    mutable mutex                  mtx;
-    condition_variable             cv; // notified on every release
+    map<string, map<string, int>>  allocation; // who holds what
+    mutable mutex                  mtx;        
 
 public:
     ResourceManager();
 
     bool requestResource(const string& taskId, const vector<string>& needed);
-    void releaseResource(const string& taskId);
+    void releaseResource(const string &taskId);
     int getAvailable(const string& resourceId) const;
     int getTotal(const string& resourceId) const;
+
     vector<string> getHeldBy(const string& resourceId) const;
     vector<Resource> getAllResources() const;
-    map<string, map<string, int>> getAllocationMatrix() const;
 
-    // Blocks until resources MIGHT be available, with timeout
-    void waitForResources(int timeoutMs = 2000);
+    map<string, map<string, int>> getAllocationMatrix() const;
 };

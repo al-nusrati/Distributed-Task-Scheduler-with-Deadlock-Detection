@@ -17,8 +17,9 @@ bool ResourceManager::requestResource(const string& taskId, const vector<string>
 
     for (const string& rid : needed) {
         for (Resource& r : resources) {
-            if (r.id == rid && r.available < 1)
-                return false;
+            if (r.id == rid && r.available < 1) {
+                return false; // not enough units
+            }
         }
     }
 
@@ -31,7 +32,6 @@ bool ResourceManager::requestResource(const string& taskId, const vector<string>
             }
         }
     }
-
     bool safe = Banker::isSafeState(resources, allocation);
 
     if (!safe) {
@@ -46,7 +46,6 @@ bool ResourceManager::requestResource(const string& taskId, const vector<string>
                 }
             }
         }
-        allocation.erase(taskId);
         return false;
     }
 
@@ -54,33 +53,24 @@ bool ResourceManager::requestResource(const string& taskId, const vector<string>
 }
 
 void ResourceManager::releaseResource(const string& taskId) {
-    {
-        lock_guard<mutex> lock(mtx);
+    lock_guard<mutex> lock(mtx);
 
-        if (allocation.find(taskId) == allocation.end()) return;
+    if (allocation.find(taskId) == allocation.end()) return;
 
-        for (auto& [rid, units] : allocation[taskId]) {
-            for (Resource& r : resources) {
-                if (r.id == rid) {
-                    r.available += units;
-                    for (auto it = r.held_by.begin(); it != r.held_by.end(); ) {
-                        if (*it == taskId) it = r.held_by.erase(it);
-                        else ++it;
-                    }
+    for (auto& [rid, units] : allocation[taskId]) {
+        for (Resource& r : resources) {
+            if (r.id == rid) {
+                r.available += units;
+                for (auto it = r.held_by.begin(); it != r.held_by.end(); ) {
+                    if (*it == taskId) it = r.held_by.erase(it);
+                    else ++it;
                 }
             }
         }
-        allocation.erase(taskId);
     }
-    // Wake ALL waiting workers immediately when resources are freed
-    cv.notify_all();
-}
 
-void ResourceManager::waitForResources(int timeoutMs) {
-    unique_lock<mutex> lock(mtx);
-    cv.wait_for(lock, chrono::milliseconds(timeoutMs));
+    allocation.erase(taskId);
 }
-
 int ResourceManager::getAvailable(const string& resourceId) const {
     lock_guard<mutex> lock(mtx);
     for (const Resource& r : resources)

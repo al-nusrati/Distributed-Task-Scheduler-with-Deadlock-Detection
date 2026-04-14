@@ -93,7 +93,8 @@ void logEvent(const string& message) {
 }
 
 void readInputFile(Scheduler& scheduler) {
-    const vector<string> ALLOWED = { "cpp", "c", "python", "js" };
+    const vector<string> ALLOWED = { "cpp", "c", "python", "java", "js" };
+    bool wasProcessingEnabled = false;
 
     // Ensure uploads dir exists
     #ifdef _WIN32
@@ -112,8 +113,24 @@ void readInputFile(Scheduler& scheduler) {
         try { file >> data; } catch (...) { continue; }
         file.close();
 
+        bool processingEnabled = data.value("processing_enabled", false);
+        if (!processingEnabled) {
+            wasProcessingEnabled = false;
+            continue;
+        }
+
         if (!data.contains("pending_tasks")) continue;
-        if (data["pending_tasks"].empty())   continue;
+        if (data["pending_tasks"].empty()) {
+            data["processing_enabled"] = false;
+            ofstream out(INPUT_FILE);
+            out << data.dump(2);
+            if (wasProcessingEnabled)
+                logEvent("Input queue drained - scheduler paused until Start is pressed again");
+            wasProcessingEnabled = false;
+            continue;
+        }
+
+        wasProcessingEnabled = true;
 
         for (auto& t : data["pending_tasks"]) {
             string lang  = t.value("language",     "");
@@ -121,7 +138,7 @@ void readInputFile(Scheduler& scheduler) {
             string user  = t.value("submitted_by", "Anonymous");
 
             if (find(ALLOWED.begin(), ALLOWED.end(), lang) == ALLOWED.end()) {
-                logEvent("Task rejected — unsupported file type: " + fname + " by " + user + " (allowed: cpp, c, python, js)");
+                logEvent("Task rejected — unsupported file type: " + fname + " by " + user + " (allowed: cpp, c, python, java, js)");
                 continue;
             }
 
@@ -149,8 +166,11 @@ void readInputFile(Scheduler& scheduler) {
         }
 
         data["pending_tasks"] = json::array();
+        data["processing_enabled"] = false;
         ofstream out(INPUT_FILE);
         out << data.dump(2);
+        logEvent("Input queue drained - scheduler paused until Start is pressed again");
+        wasProcessingEnabled = false;
     }
 }
 

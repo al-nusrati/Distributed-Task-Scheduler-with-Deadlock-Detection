@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParagonEngine Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page-shell">
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+
+    <header class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">Distributed Task Scheduler</div>
+        <h1>ParagonEngine Control Room</h1>
+        <p class="subtitle">Live task orchestration from `input.json` to `state.json`, with a visual execution timeline for completed and active work.</p>
+      </div>
+
+      <div class="hero-actions">
+        <div class="refresh-controls glass-card">
+          <label for="refreshRate">Refresh cadence</label>
+          <input id="refreshRate" type="range" min="500" max="5000" step="500" value="1000">
+          <div class="refresh-row">
+            <span id="refreshLabel">1000 ms</span>
+            <span id="inputStatusBadge" class="mode-badge">queue idle</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="banner" class="banner hidden"></div>
+
+    <section class="hero-grid">
+      <article class="glass-card status-spotlight">
+        <div class="spotlight-top">
+          <div>
+            <div class="card-kicker">Scheduler pulse</div>
+            <h2 id="statStatus">-</h2>
+          </div>
+          <span id="modeBadge" class="mode-badge">-</span>
+        </div>
+        <p id="statusNarrative" class="support-copy">Waiting for live system data.</p>
+        <div class="mini-stats">
+          <div>
+            <span class="mini-label">Completed</span>
+            <strong id="statCompleted">0</strong>
+          </div>
+          <div>
+            <span class="mini-label">Queue</span>
+            <strong id="statQueue">0</strong>
+          </div>
+          <div>
+            <span class="mini-label">Running</span>
+            <strong id="statRunning">0</strong>
+          </div>
+          <div>
+            <span class="mini-label">Uptime</span>
+            <strong id="statUptime">0s</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="glass-card flow-card">
+        <div class="card-kicker">Project flow</div>
+        <div class="flow-line">
+          <span>User file path</span>
+          <span>API reads code</span>
+          <span>`input.json`</span>
+          <span>C++ scheduler</span>
+          <span>`state.json`</span>
+          <span>Dashboard</span>
+        </div>
+      </article>
+    </section>
+
+    <main class="dashboard-grid">
+      <section class="glass-card control-panel">
+        <div class="section-heading">
+          <div>
+            <div class="card-kicker">Task intake</div>
+            <h2>Submit Workload</h2>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label for="file_path">Container file path</label>
+          <input id="file_path" placeholder="/app/shared/uploads/T1_test.py">
+
+          <label for="user">Submitted by</label>
+          <input id="user" placeholder="musab">
+
+          <button id="submitTaskBtn">Submit</button>
+          <button id="startProcessingBtn" class="secondary-btn">Start</button>
+          <small id="pendingTasksMeta">No pending input tasks.</small>
+        </div>
+
+        <div class="section-heading compact">
+          <div>
+            <div class="card-kicker">Scheduling mode</div>
+            <h2>Engine Strategy</h2>
+          </div>
+        </div>
+        <div class="row-buttons">
+          <button id="modePriorityBtn" class="secondary-btn">Priority</button>
+          <button id="modeRoundRobinBtn" class="secondary-btn">Round Robin</button>
+        </div>
+
+        <div class="section-heading compact">
+          <div>
+            <div class="card-kicker">Safety</div>
+            <h2>Deadlock Monitor</h2>
+          </div>
+        </div>
+        <div id="deadlockCard" class="deadlock-card">
+          <p id="deadlockStatus">No deadlock</p>
+          <small id="deadlockDetails">System stable.</small>
+        </div>
+
+        <div class="section-heading compact">
+          <div>
+            <div class="card-kicker">Resources</div>
+            <h2>Capacity Map</h2>
+          </div>
+        </div>
+        <div id="resources" class="resources-list"></div>
+      </section>
+
+      <section class="glass-card workers-panel">
+        <div class="section-heading">
+          <div>
+            <div class="card-kicker">Execution pool</div>
+            <h2>Workers</h2>
+          </div>
+          <small id="workerSummary">-</small>
+        </div>
+        <div id="workers" class="workers-grid"></div>
+
+        <div class="section-heading compact">
+          <div>
+            <div class="card-kicker">Task streams</div>
+            <h2>Queue Breakdown</h2>
+          </div>
+        </div>
+        <div class="queue-grid">
+          <div class="queue-column">
+            <h3>Waiting</h3>
+            <ul id="queue" class="task-list"></ul>
+          </div>
+          <div class="queue-column">
+            <h3>Running</h3>
+            <ul id="running" class="task-list"></ul>
+          </div>
+          <div class="queue-column">
+            <h3>Completed</h3>
+            <ul id="completed" class="task-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="glass-card panel-wide timeline-panel">
+        <div class="section-heading">
+          <div>
+            <div class="card-kicker">Timeline</div>
+            <h2>Execution Gantt Chart</h2>
+          </div>
+          <div class="heading-meta">
+            <small id="ganttWindow">-</small>
+            <small id="ganttHint">Click a bar to inspect task output</small>
+          </div>
+        </div>
+        <div id="ganttAxis" class="gantt-axis"></div>
+        <div id="gantt" class="gantt"></div>
+      </section>
+
+      <section class="glass-card insights-panel">
+        <div class="section-heading">
+          <div>
+            <div class="card-kicker">Live details</div>
+            <h2>Selected Task Output</h2>
+          </div>
+        </div>
+        <div id="taskMeta" class="task-meta">Click any task chip or Gantt bar to inspect output.</div>
+        <pre id="taskOutput" class="output-box">(No task selected)</pre>
+      </section>
+
+      <section class="glass-card logs-panel">
+        <div class="section-heading">
+          <div>
+            <div class="card-kicker">System narrative</div>
+            <h2>Event Log</h2>
+          </div>
+          <small id="lastUpdated">-</small>
+        </div>
+        <div id="logs" class="logs"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
