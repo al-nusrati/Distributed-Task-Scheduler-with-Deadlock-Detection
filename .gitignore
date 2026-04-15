@@ -1,0 +1,44 @@
+# Build artifacts (C++)
+core/build/
+core/**/build/
+*.exe
+*.obj
+*.o
+*.out
+*.exe.out
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# Runtime data (should not be in repo)
+api/users.json
+shared/input.json
+shared/state.json
+shared/scheduler_mode.txt
+shared/input.lock
+shared/uploads/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

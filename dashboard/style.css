@@ -730,3 +730,39 @@ button:disabled {
     min-height: 40px;
   }
 }
+
+/* ---------- Authentication Pages ---------- */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  padding: 20px;
+}
+
+.auth-card {
+  max-width: 420px;
+  width: 100%;
+  padding: 32px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 20px;
+  color: var(--muted);
+}
+
+.auth-footer a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}

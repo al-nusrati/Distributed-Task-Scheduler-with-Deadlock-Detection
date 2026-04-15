@@ -4,40 +4,43 @@
 
 using namespace std;
 
-Scheduler::Scheduler() : mode(SchedulerMode::PRIORITY) {}
+Scheduler::Scheduler() : globalMode(SchedulerMode::PRIORITY) {}
 
 void Scheduler::addTask(const Task& task) {
     lock_guard<mutex> lock(mtx);
-    taskQueue.push_back(task);
+    if (task.scheduling_mode == "round_robin")
+        rrQueue.push_back(task);
+    else
+        priorityQueue.push_back(task);
 }
 
 Task* Scheduler::getNextTask() {
     lock_guard<mutex> lock(mtx);
-    refreshMode(); 
+    refreshMode();  // still read global mode for display purposes only
 
-    if (taskQueue.empty()) return nullptr;
-
-    if (mode == SchedulerMode::PRIORITY) {
+    // Always try priority queue first (higher importance)
+    if (!priorityQueue.empty()) {
         // Find highest priority task
         auto highest = max_element(
-            taskQueue.begin(), taskQueue.end(),
+            priorityQueue.begin(), priorityQueue.end(),
             [](const Task& a, const Task& b) {
                 return a.priority < b.priority;
             }
         );
-
         Task* picked = new Task(*highest);
-        taskQueue.erase(highest);
-        return picked;
-
-    } else {
-        // RR — just take front
-        Task* picked = new Task(taskQueue.front());
-        taskQueue.pop_front();
+        priorityQueue.erase(highest);
         return picked;
     }
-}
 
+    // Otherwise take from RR queue (FIFO)
+    if (!rrQueue.empty()) {
+        Task* picked = new Task(rrQueue.front());
+        rrQueue.pop_front();
+        return picked;
+    }
+
+    return nullptr;
+}
 
 void Scheduler::refreshMode() {
     ifstream file(MODE_FILE);
@@ -47,31 +50,35 @@ void Scheduler::refreshMode() {
     file >> modeStr;
 
     if (modeStr == "round_robin")
-        mode = SchedulerMode::ROUND_ROBIN;
+        globalMode = SchedulerMode::ROUND_ROBIN;
     else
-        mode = SchedulerMode::PRIORITY;
+        globalMode = SchedulerMode::PRIORITY;
 }
 
-
 string Scheduler::getModeString() const {
-    return (mode == SchedulerMode::PRIORITY) ? "priority" : "round_robin";
+    return (globalMode == SchedulerMode::PRIORITY) ? "priority" : "round_robin";
 }
 
 vector<Task> Scheduler::getQueue() const {
     lock_guard<mutex> lock(mtx);
-    return vector<Task>(taskQueue.begin(), taskQueue.end());
+    vector<Task> all;
+    all.insert(all.end(), priorityQueue.begin(), priorityQueue.end());
+    all.insert(all.end(), rrQueue.begin(), rrQueue.end());
+    return all;
 }
 
 void Scheduler::removeTask(const string& taskId) {
     lock_guard<mutex> lock(mtx);
-    taskQueue.erase(
-        remove_if(taskQueue.begin(), taskQueue.end(),
-            [&taskId](const Task& t) { return t.id == taskId; }),
-        taskQueue.end()
-    );
+    auto removeFrom = [&](deque<Task>& q) {
+        q.erase(remove_if(q.begin(), q.end(),
+                [&taskId](const Task& t) { return t.id == taskId; }),
+                q.end());
+    };
+    removeFrom(priorityQueue);
+    removeFrom(rrQueue);
 }
 
 int Scheduler::size() const {
     lock_guard<mutex> lock(mtx);
-    return taskQueue.size();
+    return priorityQueue.size() + rrQueue.size();
 }

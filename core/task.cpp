@@ -1,8 +1,13 @@
 #include "task.h"
 using namespace std;
 
-Task::Task(string id, int priority, string filename, string filepath, string language, string submitted_by, vector<string> resources)
-    : id(id),priority(priority),duration(0),filename(filename),filepath(filepath),language(language),submitted_by(submitted_by),output(""),resources_needed(resources),status(TaskStat::Waiting)
+Task::Task(string id, int priority, string filename, string filepath,
+           string language, string submitted_by, vector<string> resources,
+           string scheduling_mode)
+    : id(id), priority(priority), duration(0), filename(filename),
+      filepath(filepath), language(language), submitted_by(submitted_by),
+      output(""), resources_needed(resources), status(TaskStat::Waiting),
+      scheduling_mode(scheduling_mode)
 {}
 
 string Task::statusToString() const {

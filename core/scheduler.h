@@ -17,33 +17,33 @@ class Scheduler {
 public:
     Scheduler();
 
-    // Add a new task to the queue
+    // Add a new task to the appropriate queue based on its scheduling_mode
     void addTask(const Task& task);
 
-    // Get next task based on active mode
-    // returns nullptr if queue is empty
+    // Get next task: first try priority queue (highest priority), else RR queue (FIFO)
+    // Returns nullptr if both queues are empty
     Task* getNextTask();
 
-    // Read scheduler_mode.txt and update active mode
+    // Read scheduler_mode.txt (global override) – still used for dashboard display
     void refreshMode();
 
-    // returns current mode as string
+    // returns current global mode as string (for state.json)
     string getModeString() const;
 
-    // returns current queue snapshot — used by main.cpp for state.json
+    // returns snapshot of both queues combined (for state.json)
     vector<Task> getQueue() const;
 
-    // Remove a specific task from queue (used by deadlock recovery)
+    // Remove a specific task from whichever queue it resides in
     void removeTask(const string& taskId);
 
-    // Returns queue size
+    // Returns total number of tasks in both queues
     int size() const;
 
 private:
-    deque<Task>  taskQueue;
-    SchedulerMode mode;
+    deque<Task>  priorityQueue;   // tasks with scheduling_mode == "priority"
+    deque<Task>  rrQueue;         // tasks with scheduling_mode == "round_robin"
+    SchedulerMode globalMode;     // kept for display only, does not affect task selection
     mutable mutex mtx;
 
-    // Path to mode flag file
     const string MODE_FILE = "../../shared/scheduler_mode.txt";
 };

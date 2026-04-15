@@ -6,6 +6,7 @@ services:
     volumes:
       - ./shared:/app/shared
       - ./jobs:/app/jobs
+      - ./api/users.json:/app/api/users.json   # persist user database
     ports:
       - "5000:5000"
 

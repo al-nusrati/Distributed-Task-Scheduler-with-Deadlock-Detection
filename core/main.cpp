@@ -11,6 +11,14 @@
 #include <iomanip>
 #include <sstream>
 #include <algorithm>
+#include <filesystem>           // C++17 cross-platform path / directory ops
+
+// File-locking headers (Unix / Linux / Docker only)
+#ifndef _WIN32
+#  include <sys/file.h>         // flock()
+#  include <fcntl.h>            // open(), O_CREAT, O_RDWR
+#  include <unistd.h>           // close()
+#endif
 
 #include "task.h"
 #include "scheduler.h"
@@ -21,10 +29,12 @@
 #include "nlohmann/json.hpp"
 
 using namespace std;
+namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 const string STATE_FILE  = "../../shared/state.json";
 const string INPUT_FILE  = "../../shared/input.json";
+const string LOCK_FILE   = "../../shared/input.lock";
 const string MODE_FILE   = "../../shared/scheduler_mode.txt";
 const string UPLOADS_DIR = "../../shared/uploads/";
 
@@ -96,34 +106,57 @@ void readInputFile(Scheduler& scheduler) {
     const vector<string> ALLOWED = { "cpp", "c", "python", "java", "js" };
     bool wasProcessingEnabled = false;
 
-    // Ensure uploads dir exists
-    #ifdef _WIN32
-        system(("if not exist \"" + UPLOADS_DIR + "\" mkdir \"" + UPLOADS_DIR + "\"").c_str());
-    #else
-        system(("mkdir -p " + UPLOADS_DIR).c_str());
-    #endif
+    fs::create_directories(UPLOADS_DIR);
+
+#ifndef _WIN32
+    {
+        int initFd = open(LOCK_FILE.c_str(), O_CREAT | O_RDWR, 0644);
+        if (initFd >= 0) close(initFd);
+    }
+#endif
 
     while (true) {
         this_thread::sleep_for(chrono::seconds(1));
 
-        ifstream file(INPUT_FILE);
-        if (!file.is_open()) continue;
+#ifndef _WIN32
+        int lockFd = open(LOCK_FILE.c_str(), O_CREAT | O_RDWR, 0644);
+        if (lockFd < 0) continue;
+        flock(lockFd, LOCK_EX);
+#endif
 
         json data;
-        try { file >> data; } catch (...) { continue; }
-        file.close();
+        {
+            ifstream file(INPUT_FILE);
+            if (!file.is_open()) {
+#ifndef _WIN32
+                flock(lockFd, LOCK_UN); close(lockFd);
+#endif
+                continue;
+            }
+            try { file >> data; }
+            catch (...) {
+#ifndef _WIN32
+                flock(lockFd, LOCK_UN); close(lockFd);
+#endif
+                continue;
+            }
+        }
 
         bool processingEnabled = data.value("processing_enabled", false);
         if (!processingEnabled) {
             wasProcessingEnabled = false;
+#ifndef _WIN32
+            flock(lockFd, LOCK_UN); close(lockFd);
+#endif
             continue;
         }
 
-        if (!data.contains("pending_tasks")) continue;
-        if (data["pending_tasks"].empty()) {
+        if (!data.contains("pending_tasks") || data["pending_tasks"].empty()) {
             data["processing_enabled"] = false;
-            ofstream out(INPUT_FILE);
-            out << data.dump(2);
+            { ofstream out(INPUT_FILE); out << data.dump(2); }
+#ifndef _WIN32
+            flock(lockFd, LOCK_UN); close(lockFd);
+#endif
             if (wasProcessingEnabled)
                 logEvent("Input queue drained - scheduler paused until Start is pressed again");
             wasProcessingEnabled = false;
@@ -132,13 +165,29 @@ void readInputFile(Scheduler& scheduler) {
 
         wasProcessingEnabled = true;
 
-        for (auto& t : data["pending_tasks"]) {
+        json pendingTasks          = data["pending_tasks"];
+        data["pending_tasks"]      = json::array();
+        data["processing_enabled"] = false;
+        { ofstream out(INPUT_FILE); out << data.dump(2); }
+
+#ifndef _WIN32
+        flock(lockFd, LOCK_UN); close(lockFd);
+#endif
+
+        logEvent("Input queue drained - scheduler paused until Start is pressed again");
+        wasProcessingEnabled = false;
+
+        for (auto& t : pendingTasks) {
             string lang  = t.value("language",     "");
             string fname = t.value("filename",     "unknown");
             string user  = t.value("submitted_by", "Anonymous");
+            string schedMode = t.value("scheduling_mode", "priority");
+            if (schedMode != "priority" && schedMode != "round_robin")
+                schedMode = "priority";
 
             if (find(ALLOWED.begin(), ALLOWED.end(), lang) == ALLOWED.end()) {
-                logEvent("Task rejected — unsupported file type: " + fname + " by " + user + " (allowed: cpp, c, python, java, js)");
+                logEvent("Task rejected — unsupported file type: " + fname
+                         + " by " + user + " (allowed: cpp, c, python, java, js)");
                 continue;
             }
 
@@ -151,26 +200,18 @@ void readInputFile(Scheduler& scheduler) {
             string content = t.value("file_content", "");
 
             string fpath = UPLOADS_DIR + taskId + "_" + fname;
-            {
-                ofstream fout(fpath);
-                fout << content;
-            }
+            { ofstream fout(fpath); fout << content; }
 
             int priority             = assignPriority(fpath);
             vector<string> resources = assignResources(lang);
 
-            Task newTask(taskId, priority, fname, fpath, lang, user, resources);
+            Task newTask(taskId, priority, fname, fpath, lang, user, resources, schedMode);
             scheduler.addTask(newTask);
 
-            logEvent("Task " + taskId + " added — " + fname + " by " + user + " (priority " + to_string(priority) + ")");
+            logEvent("Task " + taskId + " added — " + fname
+                     + " by " + user + " (priority " + to_string(priority)
+                     + ", mode " + schedMode + ")");
         }
-
-        data["pending_tasks"] = json::array();
-        data["processing_enabled"] = false;
-        ofstream out(INPUT_FILE);
-        out << data.dump(2);
-        logEvent("Input queue drained - scheduler paused until Start is pressed again");
-        wasProcessingEnabled = false;
     }
 }
 
@@ -205,26 +246,24 @@ void writeStateFile(
             worker["current_file"]    = ws.current_file.empty()  ? json(nullptr) : json(ws.current_file);
             worker["current_user"]    = ws.current_user.empty()  ? json(nullptr) : json(ws.current_user);
             worker["tasks_completed"] = ws.tasks_completed;
-            // Store last output so dashboard can surface it
             worker["last_output"]     = ws.last_output.empty()   ? json(nullptr) : json(ws.last_output);
             worker["last_task_id"]    = ws.last_task_id.empty()  ? json(nullptr) : json(ws.last_task_id);
             state["workers"].push_back(worker);
         }
 
-        // Task queue snapshot
         state["task_queue"] = json::array();
         for (const Task& t : scheduler.getQueue()) {
             json task;
-            task["id"]           = t.id;
-            task["priority"]     = t.priority;
-            task["filename"]     = t.filename;
-            task["language"]     = t.language;
-            task["submitted_by"] = t.submitted_by;
-            task["status"]       = t.statusToString();
+            task["id"]              = t.id;
+            task["priority"]        = t.priority;
+            task["filename"]        = t.filename;
+            task["language"]        = t.language;
+            task["submitted_by"]    = t.submitted_by;
+            task["status"]          = t.statusToString();
+            task["scheduling_mode"] = t.scheduling_mode;
             state["task_queue"].push_back(task);
         }
 
-        // Resources
         state["resources"] = json::array();
         for (const Resource& r : resourceManager.getAllResources()) {
             json res;
@@ -236,7 +275,6 @@ void writeStateFile(
             state["resources"].push_back(res);
         }
 
-        // Deadlock
         {
             lock_guard<mutex> lock(deadlockMtx);
             state["deadlock"]["status"]         = currentDeadlockState.status;
@@ -296,7 +334,8 @@ int main() {
             lock_guard<mutex> lock(deadlockMtx);
             currentDeadlockState = state;
         }
-        logEvent("Deadlock " + state.status + ": " + (state.action_taken.empty() ? "detected" : state.action_taken));
+        logEvent("Deadlock " + state.status + ": "
+                 + (state.action_taken.empty() ? "detected" : state.action_taken));
     });
 
     for (Worker* w : workers) w->start();

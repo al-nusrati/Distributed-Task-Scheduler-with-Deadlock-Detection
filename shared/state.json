@@ -5,23 +5,7 @@
     "involved_tasks": [],
     "status": "none"
   },
-  "event_log": [
-    {
-      "message": "W4 completed Task T1 (test.py)",
-      "time": "09:53:37",
-      "type": "task_completed"
-    },
-    {
-      "message": "W4 picked up Task T1 (test.py) from musab",
-      "time": "09:53:32",
-      "type": "task_started"
-    },
-    {
-      "message": "Task T1 added — test.py by musab (priority 9)",
-      "time": "09:53:32",
-      "type": "task_added"
-    }
-  ],
+  "event_log": [],
   "resources": [
     {
       "available": 3,
@@ -55,12 +39,10 @@
   "system": {
     "active_scheduler": "priority",
     "status": "running",
-    "total_tasks_completed": 1,
-    "uptime_seconds": 39
+    "total_tasks_completed": 0,
+    "uptime_seconds": 30
   },
-  "task_outputs": {
-    "T1": "Running step 0\nRunning step 1\nRunning step 2\nRunning step 3\nRunning step 4\nJob Finished\n\n[Exited with code 0]"
-  },
+  "task_outputs": {},
   "task_queue": [],
   "workers": [
     {
@@ -98,10 +80,10 @@
       "current_task": null,
       "current_user": null,
       "id": "W4",
-      "last_output": "Running step 0\nRunning step 1\nRunning step 2\nRunning step 3\nRunning step 4\nJob Finished\n\n[Exited with code 0]",
-      "last_task_id": "T1",
+      "last_output": null,
+      "last_task_id": null,
       "status": "idle",
-      "tasks_completed": 1
+      "tasks_completed": 0
     }
   ]
 }

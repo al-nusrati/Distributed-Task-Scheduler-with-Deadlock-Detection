@@ -1,0 +1,15 @@
+﻿# Ignore build artifacts from local Windows compilation
+core/build/
+core/**/build/
+*.exe
+*.obj
+*.o
+CMakeCache.txt
+CMakeFiles/
+
+# Ignore runtime data that should not be baked into the image
+api/users.json
+shared/input.json
+shared/state.json
+shared/uploads/
+shared/input.lock

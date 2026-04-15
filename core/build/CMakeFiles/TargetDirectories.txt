@@ -1,3 +1,3 @@
-/mnt/c/Users/masab/OneDrive/Desktop/New folder/Distributed-Task-Scheduler-with-Deadlock-Detection/core/build/CMakeFiles/scheduler.dir
-/mnt/c/Users/masab/OneDrive/Desktop/New folder/Distributed-Task-Scheduler-with-Deadlock-Detection/core/build/CMakeFiles/edit_cache.dir
-/mnt/c/Users/masab/OneDrive/Desktop/New folder/Distributed-Task-Scheduler-with-Deadlock-Detection/core/build/CMakeFiles/rebuild_cache.dir
+D:/Projects/Distributed-Task-Scheduler-with-Deadlock-Detection/core/build/CMakeFiles/scheduler.dir
+D:/Projects/Distributed-Task-Scheduler-with-Deadlock-Detection/core/build/CMakeFiles/edit_cache.dir
+D:/Projects/Distributed-Task-Scheduler-with-Deadlock-Detection/core/build/CMakeFiles/rebuild_cache.dir
