@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ParagonEngine — Register</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="ambient ambient-a"></div>
+      <div class="ambient ambient-b"></div>
+
+      <div class="auth-container">
+        <div class="glass-card auth-card">
+          <div class="eyebrow">Distributed Task Scheduler</div>
+          <h1>Create Account</h1>
+          <p class="support-copy" style="margin-bottom: 24px">
+            Join ParagonEngine and run your code.
+          </p>
+
+          <div id="authBanner" class="banner hidden"></div>
+
+          <form id="registerForm" class="auth-form">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="alice" required />
+
+            <label for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              placeholder="••••••••"
+              required
+            />
+
+            <label for="confirm">Confirm Password</label>
+            <input
+              type="password"
+              id="confirm"
+              placeholder="••••••••"
+              required
+            />
+
+            <button type="submit">Sign Up</button>
+          </form>
+
+          <p class="auth-footer">
+            Already have an account?
+            <a href="login.html">Log in</a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API = "/api";
+
+      function showBanner(message, kind = "error") {
+        const banner = document.getElementById("authBanner");
+        banner.className = `banner ${kind}`;
+        banner.textContent = message;
+        banner.classList.remove("hidden");
+      }
+
+      document
+        .getElementById("registerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const username = document.getElementById("username").value.trim();
+          const password = document.getElementById("password").value;
+          const confirm = document.getElementById("confirm").value;
+
+          if (password !== confirm) {
+            showBanner("Passwords do not match.", "error");
+            return;
+          }
+
+          try {
+            const res = await fetch(`${API}/register`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username, password }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+              showBanner(data.error || "Registration failed", "error");
+              return;
+            }
+
+            // Redirect to main dashboard
+            window.location.href = "/";
+          } catch (error) {
+            showBanner("Network error. Please try again.", "error");
+          }
+        });
+    </script>
+  </body>
+</html>
