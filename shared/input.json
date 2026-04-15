@@ -1,5 +1,251 @@
 {
-  "pending_tasks": [],
-  "processing_enabled": false,
+  "pending_tasks": [
+    {
+      "filename": "high_prio_cpp.cpp",
+      "language": "cpp",
+      "submitted_by": "alice",
+      "scheduling_mode": "priority",
+      "file_content": "#include <iostream>\nint main() { std::cout << \"High priority C++\"; return 0; }"
+    },
+    {
+      "filename": "low_prio_py.py",
+      "language": "python",
+      "submitted_by": "bob",
+      "scheduling_mode": "round_robin",
+      "file_content": "print('Low priority Python')"
+    },
+    {
+      "filename": "med_java.java",
+      "language": "java",
+      "submitted_by": "carol",
+      "scheduling_mode": "priority",
+      "file_content": "public class med_java { public static void main(String[] args) { System.out.println(\"Medium Java\"); } }"
+    },
+    {
+      "filename": "high_js.js",
+      "language": "js",
+      "submitted_by": "dave",
+      "scheduling_mode": "round_robin",
+      "file_content": "console.log('High priority JS');"
+    },
+    {
+      "filename": "c_low.c",
+      "language": "c",
+      "submitted_by": "eve",
+      "scheduling_mode": "priority",
+      "file_content": "#include <stdio.h>\nint main() { printf(\"Low C\\n\"); return 0; }"
+    },
+    {
+      "filename": "infinite_loop.py",
+      "language": "python",
+      "submitted_by": "frank",
+      "scheduling_mode": "round_robin",
+      "file_content": "while True: pass"
+    },
+    {
+      "filename": "big_cpp.cpp",
+      "language": "cpp",
+      "submitted_by": "grace",
+      "scheduling_mode": "priority",
+      "file_content": "#include <iostream>\nint main() { long s=0; for(int i=0;i<1000000;++i) s+=i; std::cout << s; return 0; }"
+    },
+    {
+      "filename": "mem_hog.cpp",
+      "language": "cpp",
+      "submitted_by": "heidi",
+      "scheduling_mode": "round_robin",
+      "file_content": "#include <iostream>\n#include <vector>\nint main() { std::vector<int> v(2000000); std::cout << \"Mem hog\"; return 0; }"
+    },
+    {
+      "filename": "quick_py.py",
+      "language": "python",
+      "submitted_by": "ivan",
+      "scheduling_mode": "priority",
+      "file_content": "print('Quick')"
+    },
+    {
+      "filename": "fail_compile.cpp",
+      "language": "cpp",
+      "submitted_by": "judy",
+      "scheduling_mode": "round_robin",
+      "file_content": "#include <iostream>\nint main() { std::cout << missing; }"
+    },
+    {
+      "filename": "java_big.java",
+      "language": "java",
+      "submitted_by": "kevin",
+      "scheduling_mode": "priority",
+      "file_content": "public class java_big { public static void main(String[] args) { long s=0; for(int i=0;i<1000000;i++) s+=i; System.out.println(s); } }"
+    },
+    {
+      "filename": "node_heavy.js",
+      "language": "js",
+      "submitted_by": "laura",
+      "scheduling_mode": "round_robin",
+      "file_content": "let a=[]; for(let i=0;i<1000000;i++) a.push(i); console.log('Done');"
+    },
+    {
+      "filename": "c_big.c",
+      "language": "c",
+      "submitted_by": "mike",
+      "scheduling_mode": "priority",
+      "file_content": "#include <stdio.h>\n#include <stdlib.h>\nint main() { int *p = malloc(2000000*sizeof(int)); free(p); printf(\"C big ok\"); return 0; }"
+    },
+    {
+      "filename": "slow_py.py",
+      "language": "python",
+      "submitted_by": "nina",
+      "scheduling_mode": "round_robin",
+      "file_content": "import time\ntime.sleep(4)\nprint('Slow Python')"
+    },
+    {
+      "filename": "cpp_med.cpp",
+      "language": "cpp",
+      "submitted_by": "oliver",
+      "scheduling_mode": "priority",
+      "file_content": "#include <iostream>\nint main() { long s=0; for(int i=0;i<500000;i++) s+=i; std::cout << s; return 0; }"
+    },
+    {
+      "filename": "java_quick.java",
+      "language": "java",
+      "submitted_by": "pat",
+      "scheduling_mode": "round_robin",
+      "file_content": "public class java_quick { public static void main(String[] args) { System.out.println(\"Quick Java\"); } }"
+    },
+    {
+      "filename": "js_quick.js",
+      "language": "js",
+      "submitted_by": "quinn",
+      "scheduling_mode": "priority",
+      "file_content": "console.log('Quick JS');"
+    },
+    {
+      "filename": "c_quick.c",
+      "language": "c",
+      "submitted_by": "rose",
+      "scheduling_mode": "round_robin",
+      "file_content": "#include <stdio.h>\nint main() { printf(\"Quick C\\n\"); return 0; }"
+    },
+    {
+      "filename": "py_med.py",
+      "language": "python",
+      "submitted_by": "sam",
+      "scheduling_mode": "priority",
+      "file_content": "import time\ntime.sleep(2)\nprint('Medium Python')"
+    },
+    {
+      "filename": "cpp_high.cpp",
+      "language": "cpp",
+      "submitted_by": "tina",
+      "scheduling_mode": "round_robin",
+      "file_content": "#include <iostream>\nint main() { std::cout << \"High C++\"; return 0; }"
+    },
+    {
+      "filename": "java_high.java",
+      "language": "java",
+      "submitted_by": "uma",
+      "scheduling_mode": "priority",
+      "file_content": "public class java_high { public static void main(String[] args) { System.out.println(\"High Java\"); } }"
+    },
+    {
+      "filename": "js_high.js",
+      "language": "js",
+      "submitted_by": "victor",
+      "scheduling_mode": "round_robin",
+      "file_content": "console.log('High JS');"
+    },
+    {
+      "filename": "c_high.c",
+      "language": "c",
+      "submitted_by": "wendy",
+      "scheduling_mode": "priority",
+      "file_content": "#include <stdio.h>\nint main() { printf(\"High C\\n\"); return 0; }"
+    },
+    {
+      "filename": "py_high.py",
+      "language": "python",
+      "submitted_by": "xander",
+      "scheduling_mode": "round_robin",
+      "file_content": "print('High Python')"
+    },
+    {
+      "filename": "cpp_low.cpp",
+      "language": "cpp",
+      "submitted_by": "yara",
+      "scheduling_mode": "priority",
+      "file_content": "#include <iostream>\nint main() { std::cout << \"Low C++\"; return 0; }"
+    },
+    {
+      "filename": "java_low.java",
+      "language": "java",
+      "submitted_by": "zack",
+      "scheduling_mode": "round_robin",
+      "file_content": "public class java_low { public static void main(String[] args) { System.out.println(\"Low Java\"); } }"
+    },
+    {
+      "filename": "js_low.js",
+      "language": "js",
+      "submitted_by": "amy",
+      "scheduling_mode": "priority",
+      "file_content": "console.log('Low JS');"
+    },
+    {
+      "filename": "c_low2.c",
+      "language": "c",
+      "submitted_by": "brian",
+      "scheduling_mode": "round_robin",
+      "file_content": "#include <stdio.h>\nint main() { printf(\"Low C 2\\n\"); return 0; }"
+    },
+    {
+      "filename": "py_low.py",
+      "language": "python",
+      "submitted_by": "chloe",
+      "scheduling_mode": "priority",
+      "file_content": "print('Low Python')"
+    },
+    {
+      "filename": "timeout_test.py",
+      "language": "python",
+      "submitted_by": "dylan",
+      "scheduling_mode": "round_robin",
+      "file_content": "import time\ntime.sleep(15)\nprint('Should be killed')"
+    },
+    {
+      "filename": "resource_hog1.py",
+      "language": "python",
+      "submitted_by": "ella",
+      "scheduling_mode": "priority",
+      "file_content": "# Requests R2+R3 – will contend with others\nprint('Resource hog 1')"
+    },
+    {
+      "filename": "resource_hog2.cpp",
+      "language": "cpp",
+      "submitted_by": "finn",
+      "scheduling_mode": "round_robin",
+      "file_content": "#include <iostream>\nint main() { std::cout << \"Resource hog 2 (needs R1+R2)\"; return 0; }"
+    },
+    {
+      "filename": "resource_hog3.java",
+      "language": "java",
+      "submitted_by": "gina",
+      "scheduling_mode": "priority",
+      "file_content": "public class resource_hog3 { public static void main(String[] args) { System.out.println(\"Needs R1+R2+R3\"); } }"
+    },
+    {
+      "filename": "resource_hog4.js",
+      "language": "js",
+      "submitted_by": "hank",
+      "scheduling_mode": "round_robin",
+      "file_content": "console.log('Needs R3+R4');"
+    },
+    {
+      "filename": "many_small_tasks.py",
+      "language": "python",
+      "submitted_by": "iris",
+      "scheduling_mode": "priority",
+      "file_content": "for i in range(5): print(i)"
+    }
+  ],
+  "processing_enabled": true,
   "reset_flag": false
 }

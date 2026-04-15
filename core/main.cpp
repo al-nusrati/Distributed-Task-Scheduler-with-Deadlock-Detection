@@ -319,6 +319,8 @@ void collectOutputs(vector<Worker*>& workers) {
 
 int main() {
     cout << "ParagonEngine — Starting..." << endl;
+    // ... inside main() after the startup message
+    cout << "Current working directory: " << fs::current_path().string() << endl;
 
     Scheduler       scheduler;
     ResourceManager resourceManager;
